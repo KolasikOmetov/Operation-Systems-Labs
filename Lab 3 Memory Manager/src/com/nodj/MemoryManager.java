@@ -12,6 +12,10 @@ public class MemoryManager {
     public void work() {
         for (int loop = 1; loop < 20; loop++) {
             for (Process process : processList) {
+                if(loop%2 == 1){
+                    swapping(process);
+                    continue;
+                }
                 int index = Main.getRandomNumber(0, process.getVirtualMemory().size() - 1);
                 Page usefulPage = process.getVirtualMemory().get(index);
                 int actionType = Main.getRandomNumber(0, 1); // 0 - Обращение, 1 - Модификация
@@ -68,6 +72,7 @@ public class MemoryManager {
     }
 
     public void swapping(Process process) {
+        System.out.println("Выполенение свопинга...");
         Page[] pm = physicalMemory.getPageTable();
         for (int i = 0; i < process.getVirtualMemory().size(); i++) {
             Page trashPage = pm[i];
