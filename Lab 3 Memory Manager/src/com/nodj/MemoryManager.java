@@ -28,7 +28,7 @@ public class MemoryManager {
                         System.out.println("Страница: " + usefulPage.getID() + " Процесс: " + process.getID() +
                                 " ФП: " + usefulPage.getPhysicalPageID() + " Модификация");
                     }
-                //если страницы нет, но в физической памяти есть место
+                    //если страницы нет, но в физической памяти есть место
                 } else if (pm[physicalMemory.getMaxPages() - 1] == null) {
                     for (int i = 0; i < physicalMemory.getMaxPages(); i++) {
                         if (pm[i] == null) {
@@ -64,6 +64,18 @@ public class MemoryManager {
                     page.setM(0);
                 }
             }
+        }
+    }
+
+    public void swapping(Process process) {
+        Page[] pm = physicalMemory.getPageTable();
+        for (int i = 0; i < process.getVirtualMemory().size(); i++) {
+            Page trashPage = pm[i];
+            if (trashPage != null) {
+                System.out.println("Запись на диск страницы " + trashPage.getID() + " процесса " + trashPage.getProcessID());
+            }
+            pm[i] = process.getVirtualMemory().get(i);
+            System.out.println("Добавление страницы " + pm[i].getID() + " процесса " + pm[i].getProcessID());
         }
     }
 
