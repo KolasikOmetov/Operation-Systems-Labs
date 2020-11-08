@@ -21,22 +21,50 @@ public class App {
     private void initialize() {
         int width = 300;
         int height = 600;
-        Disk disk = new Disk(1200, 1);
-        fileSystem = new FileSystem(disk);
-        fileManager = new FileManager(this, disk, fileSystem);
-        panel = new FileSystemPanel(fileSystem);
+
         frame = new JFrame();
         frame.setName("Файловый менеджер");
         frame.setBounds(100, 100, 1000, 700);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.getContentPane().setLayout(null);
 
+        int size;
+        while (true) {
+            try {
+                size = Integer.parseInt(JOptionPane.showInputDialog(frame, "Введите размер диска (не более 1200 и не менее 4)"));
+                if (size > 1200 || size < 4) {
+                    throw new Exception();
+                } else {
+                    break;
+                }
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(frame, "Были введены некорректные данные", "Создание диска", JOptionPane.ERROR_MESSAGE);
+            }
+        }
+
+        int sizeSector;
+        while (true) {
+            try {
+                sizeSector = Integer.parseInt(JOptionPane.showInputDialog(frame, "Введите размер сектора диска (не более 1/4 от размера диска и не менее 1)"));
+                if (sizeSector > size / 4 || sizeSector < 1) {
+                    throw new Exception();
+                } else {
+                    break;
+                }
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(frame, "Были введены некорректные данные", "Создание диска", JOptionPane.ERROR_MESSAGE);
+            }
+        }
+
+        Disk disk = new Disk(size, sizeSector);
+        fileSystem = new FileSystem(disk);
+        fileManager = new FileManager(this, disk, fileSystem);
+
+        panel = new FileSystemPanel(fileSystem);
         panel.setBorder(new BevelBorder(BevelBorder.LOWERED,
                 null, null, null, null));
-
-        JScrollPane scrollPanel = new JScrollPane(panel);
-        frame.getContentPane().add(scrollPanel);
-        scrollPanel.setBounds(10, 11, width, height);
+        frame.getContentPane().add(panel);
+        panel.setBounds(10, 11, width, height);
 
         DefaultMutableTreeNode root = new DefaultMutableTreeNode(fileSystem.getRoot(), true);
         fileManagerTree = new JTree(root);
@@ -74,16 +102,24 @@ public class App {
             panel.repaint();
         });
 
-        JButton copyFileButton = new JButton("Copy");
+        JButton copyFileButton = new JButton("Choose");
         copyFileButton.setBounds(width + 50, 190, 100, 50);
         frame.getContentPane().add(copyFileButton);
-        copyFileButton.addActionListener(e -> fileManager.copy());
+        copyFileButton.addActionListener(e -> fileManager.choose());
 
         JButton pasteFileButton = new JButton("Paste");
         pasteFileButton.setBounds(width + 50, 250, 100, 50);
         frame.getContentPane().add(pasteFileButton);
         pasteFileButton.addActionListener(e -> {
             fileManager.paste();
+            panel.repaint();
+        });
+
+        JButton moveFileButton = new JButton("Move");
+        moveFileButton.setBounds(width + 50, 310, 100, 50);
+        frame.getContentPane().add(moveFileButton);
+        moveFileButton.addActionListener(e -> {
+            fileManager.move();
             panel.repaint();
         });
     }

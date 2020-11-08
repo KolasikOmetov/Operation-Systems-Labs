@@ -67,7 +67,7 @@ public class FileSystem {
         if (catalog.addFile(file)) {
             failed = false;
             System.out.println("Rest: " + (disk.getFreeSectors() - fileSectorSize));
-            file.setINode(addInDisk(file.getSize()));
+            file.setINode(addInDisk(fileSectorSize));
             if (file.getClass() == Catalog.class) {
                 allocateAllEntireFiles((Catalog) file);
                 return "Каталог " + file.getName() + " успешно создан в каталоге " + catalog.getName();
@@ -83,7 +83,7 @@ public class FileSystem {
 
     private void allocateAllEntireFiles(Catalog file) {
         for (File f : file.getFiles()) {
-            f.setINode(addInDisk(f.getSize()));
+            f.setINode(addInDisk(f.getSize() / disk.getSectorSize()));
             if (f.getClass() == Catalog.class) {
                 allocateAllEntireFiles((Catalog) f);
             }
@@ -134,8 +134,11 @@ public class FileSystem {
         while (curINode != -1) {
             disk.increeFreeSectors();
             disk.getSectorsArray()[curINode].setSectorStatus(SectorStatus.EMPTY);
+            int pastINode = curINode;
             curINode = clustersArray[curINode];
+            clustersArray[pastINode] = -2;
         }
+        file.setINode(-1);
     }
 
     public Catalog getRoot() {
@@ -146,8 +149,8 @@ public class FileSystem {
         return clustersArray;
     }
 
-    public boolean isFailed() {
-        return failed;
+    public boolean isSuccess() {
+        return !failed;
     }
 
     public void setFailed(boolean failed) {

@@ -10,6 +10,12 @@ public class File {
         this.size = size;
     }
 
+    public File(File file) {
+        this.name = file.name;
+        this.size = file.size;
+        this.iNode = file.iNode;
+    }
+
     public int getINode() {
         return iNode;
     }

@@ -73,7 +73,7 @@ public class FileManager {
         File newFile = new File(nameFile, sizeFile);
         JOptionPane.showMessageDialog(parent.frame, fileSystem.addFile((Catalog) node.getUserObject(), newFile), "Добавление файла", JOptionPane.INFORMATION_MESSAGE);
 
-        if (!fileSystem.isFailed()) {
+        if (fileSystem.isSuccess()) {
             fileSystem.setFailed(true);
             DefaultMutableTreeNode fileNode = new DefaultMutableTreeNode(newFile, false);
             if (((File) (((DefaultMutableTreeNode) node.getChildAt(0)).getUserObject())).getName().equals("")) {
@@ -109,7 +109,7 @@ public class FileManager {
         Catalog newCatalog = new Catalog(nameCatalog);
         JOptionPane.showMessageDialog(parent.frame, fileSystem.addFile((Catalog) node.getUserObject(), newCatalog), "Добавление файла", JOptionPane.INFORMATION_MESSAGE);
 
-        if (!fileSystem.isFailed()) {
+        if (fileSystem.isSuccess()) {
             fileSystem.setFailed(true);
             if (((File) (((DefaultMutableTreeNode) node.getChildAt(0)).getUserObject())).getName().equals("")) {
                 node.remove(0);
@@ -136,7 +136,7 @@ public class FileManager {
         if (result == JOptionPane.YES_OPTION) {
             DefaultMutableTreeNode parentNode = (DefaultMutableTreeNode) node.getParent();
             JOptionPane.showMessageDialog(parent.frame, fileSystem.deleteFile((Catalog) parentNode.getUserObject(), (File) node.getUserObject()), "Удаление файла", JOptionPane.INFORMATION_MESSAGE);
-            if (!fileSystem.isFailed()) {
+            if (fileSystem.isSuccess()) {
                 fileSystem.setFailed(true);
                 parentNode.remove(node);
                 if (parentNode.getChildCount() == 0) {
@@ -148,17 +148,17 @@ public class FileManager {
         }
     }
 
-    public void copy() {
+    public void choose() {
         DefaultMutableTreeNode node = (DefaultMutableTreeNode) parent.getFileManagerTree().getLastSelectedPathComponent();
 
-        if (node == null || node.getParent() == null) {
+        if (node == null || node.getParent() == null || ((File)node.getUserObject()).getName().equals("")) {
             JOptionPane.showConfirmDialog(parent.frame, "Выберите файл, который хотите скопировать",
                     "Ошибка", JOptionPane.OK_CANCEL_OPTION, JOptionPane.ERROR_MESSAGE);
             return;
         }
 
         buffer = node;
-        JOptionPane.showMessageDialog(parent.frame, "Файл " + node.getUserObject() + " скопирован!",
+        JOptionPane.showMessageDialog(parent.frame, "Файл " + node.getUserObject() + " скопирован в буфер обмена",
                 "Копирование", JOptionPane.INFORMATION_MESSAGE);
     }
 
@@ -178,7 +178,7 @@ public class FileManager {
 
             JOptionPane.showMessageDialog(parent.frame, fileSystem.addFile((Catalog) node.getUserObject(), newFile), "Вставка файла", JOptionPane.INFORMATION_MESSAGE);
 
-            if (!fileSystem.isFailed()) {
+            if (fileSystem.isSuccess()) {
                 if (((File) (((DefaultMutableTreeNode) node.getChildAt(0)).getUserObject())).getName().equals("")) {
                     node.remove(0);
                 }
@@ -225,13 +225,12 @@ public class FileManager {
         if (nodeFile.getClass() != Catalog.class) {
             newNode = new DefaultMutableTreeNode(new File(node.toString(), nodeFile.getSize()));
         } else {
-            Catalog catalog = new Catalog(node.toString());
-            catalog.setFiles(new ArrayList<>(((Catalog)nodeFile).getFiles()));
+            Catalog catalog = duplicateFiles(node.toString(), (Catalog)nodeFile);
             newNode = new DefaultMutableTreeNode(catalog);
             for (int i = 0; i < node.getChildCount(); i++) {
                 if (node.getChildAt(i).isLeaf()) {
                     DefaultMutableTreeNode nodeChild = (DefaultMutableTreeNode) node.getChildAt(i);
-                    File file = catalog.getFiles().get(i);
+                    File file = (File) nodeChild.getUserObject();
                     newNode.add(new DefaultMutableTreeNode(new File(nodeChild.toString(), file.getSize())));
                 } else {
                     newNode.add(cloneNode((DefaultMutableTreeNode) node.getChildAt(i)));
@@ -241,30 +240,61 @@ public class FileManager {
         return newNode;
     }
 
-    private void allocateCatalog(DefaultMutableTreeNode node, DefaultMutableTreeNode parentNode) {
-        Catalog parentCatalog = (Catalog) parentNode.getUserObject();
-        if (node.getUserObject().getClass() != Catalog.class) {
-            return;
+    public Catalog duplicateFiles(String name, Catalog referenceCatalog){
+        Catalog catalog = new Catalog(name);
+        ArrayList<File> files = new ArrayList<>();
+        for (File f: referenceCatalog.getFiles()) {
+            if (f.getClass() == Catalog.class) {
+                files.add(duplicateFiles(f.getName(), (Catalog)f));
+            }
+            else {
+                files.add(new File(f));
+            }
         }
-        Catalog catalog = (Catalog) node.getUserObject();
+        catalog.setFiles(files);
+        return catalog;
+    }
 
-        String message = fileSystem.addFile(parentCatalog, catalog);
-        if (fileSystem.isFailed()) {
-            JOptionPane.showMessageDialog(parent.frame, message, "Вставка файла", JOptionPane.INFORMATION_MESSAGE);
-            return;
+    public void move(){
+        if (buffer != null) {
+            DefaultMutableTreeNode node = (DefaultMutableTreeNode) parent.getFileManagerTree().getLastSelectedPathComponent();
+
+            if (node == null || !node.getAllowsChildren() || node.isLeaf() || node == buffer || node.isNodeAncestor(buffer)) {
+                JOptionPane.showConfirmDialog(parent.frame, "Выберите каталог, куда желаете вставить файл",
+                        "Ошибка", JOptionPane.OK_CANCEL_OPTION, JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
+            File file = (File) buffer.getUserObject();
+
+            Catalog targetedCatalog = (Catalog)node.getUserObject();
+
+            if (targetedCatalog.addFile(file)) {
+                DefaultMutableTreeNode bufferParent = (DefaultMutableTreeNode) buffer.getParent();
+                bufferParent.remove(buffer);
+                ((Catalog)bufferParent.getUserObject()).getFiles().remove(file);
+                if(bufferParent.getChildCount() == 0){
+                    bufferParent.add(new DefaultMutableTreeNode(new File("", 0)));
+                }
+                if (((File) (((DefaultMutableTreeNode) node.getChildAt(0)).getUserObject())).getName().equals("")) {
+                    node.remove(0);
+                }
+                node.add(buffer);
+                buffer.setParent(node);
+                parent.getFileManagerTree().updateUI();
+                elementChosen();
+                parent.getFileManagerTree().expandPath(new TreePath(node.getPath()));
+                JOptionPane.showMessageDialog(parent.frame, "Перемещение прошло успешно", "Перемещение", JOptionPane.INFORMATION_MESSAGE);
+            }
+            else {
+                if (file.getClass() == Catalog.class)
+                    JOptionPane.showMessageDialog(parent.frame, "Каталог " + file.getName() + " уже существует в каталоге " + targetedCatalog.getName(), "Перемещение каталога", JOptionPane.ERROR_MESSAGE);
+                else
+                    JOptionPane.showMessageDialog(parent.frame, "Файл " + file.getName() + " уже существует в каталоге " + targetedCatalog.getName(), "Перемещение файла", JOptionPane.ERROR_MESSAGE);
+            }
+        } else {
+            JOptionPane.showMessageDialog(parent.frame, "Вы не скопировали файл",
+                    "Ошибка", JOptionPane.ERROR_MESSAGE);
         }
-//        for (int i = 0; i < node.getChildCount(); i++) {
-//            DefaultMutableTreeNode nodeChild = (DefaultMutableTreeNode) node.getChildAt(i);
-//            if (node.getChildAt(i).isLeaf()) {
-//                File file = (File) nodeChild.getUserObject();
-//                String messageErr = fileSystem.addFile(catalog, file);
-//                if (fileSystem.isFailed()) {
-//                    JOptionPane.showMessageDialog(parent.frame, messageErr, "Вставка файла", JOptionPane.INFORMATION_MESSAGE);
-//                    return;
-//                }
-//            } else {
-//                allocateCatalog(nodeChild, node);
-//            }
-//        }
     }
 }
