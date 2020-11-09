@@ -26,8 +26,8 @@ public class FileSystem {
     }
 
     public void showDisk(Graphics g) {
-        int cellSize = 10;
-        int margin = 30;
+        int len = 10;
+        int p = 10;
         for (int i = 0; i <= disk.getSectorsArray().length / 25; i++) {
             for (int j = 0; j < 25; j++) {
                 if (i * 25 + j >= disk.getSectorsArray().length) {
@@ -44,9 +44,9 @@ public class FileSystem {
                         g.setColor(new Color(222, 60, 60));
                         break;
                 }
-                g.fillRect(margin + j * cellSize, margin + i * cellSize, cellSize, cellSize);
+                g.fillRect(p + j * len, p + i * len, len, len);
                 g.setColor(Color.BLACK);
-                g.drawRect(margin + j * cellSize, margin + i * cellSize, cellSize, cellSize);
+                g.drawRect(p + j * len, p + i * len, len, len);
             }
         }
     }

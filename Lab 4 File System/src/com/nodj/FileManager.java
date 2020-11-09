@@ -151,7 +151,7 @@ public class FileManager {
     public void choose() {
         DefaultMutableTreeNode node = (DefaultMutableTreeNode) parent.getFileManagerTree().getLastSelectedPathComponent();
 
-        if (node == null || node.getParent() == null || ((File)node.getUserObject()).getName().equals("")) {
+        if (node == null || node.getParent() == null || ((File) node.getUserObject()).getName().equals("")) {
             JOptionPane.showConfirmDialog(parent.frame, "Выберите файл, который хотите скопировать",
                     "Ошибка", JOptionPane.OK_CANCEL_OPTION, JOptionPane.ERROR_MESSAGE);
             return;
@@ -183,10 +183,9 @@ public class FileManager {
                     node.remove(0);
                 }
                 fileSystem.setFailed(true);
-                if(newFile.getClass() == Catalog.class){
+                if (newFile.getClass() == Catalog.class) {
                     node.add(makeTree(new DefaultMutableTreeNode(newFile, true)));
-                }
-                else {
+                } else {
                     node.add(new DefaultMutableTreeNode(newFile, false));
                 }
 
@@ -204,15 +203,14 @@ public class FileManager {
 
     private DefaultMutableTreeNode makeTree(DefaultMutableTreeNode node) {
         Catalog c = (Catalog) node.getUserObject();
-        if (c.getFiles().size() == 0){
+        if (c.getFiles().size() == 0) {
             node.add(new DefaultMutableTreeNode(new File("", 0), false));
             return node;
         }
-        for (File f: c.getFiles()){
-            if (f.getClass() == Catalog.class){
+        for (File f : c.getFiles()) {
+            if (f.getClass() == Catalog.class) {
                 node.add(makeTree(new DefaultMutableTreeNode(f, true)));
-            }
-            else {
+            } else {
                 node.add(new DefaultMutableTreeNode(f, false));
             }
         }
@@ -225,7 +223,7 @@ public class FileManager {
         if (nodeFile.getClass() != Catalog.class) {
             newNode = new DefaultMutableTreeNode(new File(node.toString(), nodeFile.getSize()));
         } else {
-            Catalog catalog = duplicateFiles(node.toString(), (Catalog)nodeFile);
+            Catalog catalog = duplicateFiles(node.toString(), (Catalog) nodeFile);
             newNode = new DefaultMutableTreeNode(catalog);
             for (int i = 0; i < node.getChildCount(); i++) {
                 if (node.getChildAt(i).isLeaf()) {
@@ -240,14 +238,13 @@ public class FileManager {
         return newNode;
     }
 
-    public Catalog duplicateFiles(String name, Catalog referenceCatalog){
+    public Catalog duplicateFiles(String name, Catalog referenceCatalog) {
         Catalog catalog = new Catalog(name);
         ArrayList<File> files = new ArrayList<>();
-        for (File f: referenceCatalog.getFiles()) {
+        for (File f : referenceCatalog.getFiles()) {
             if (f.getClass() == Catalog.class) {
-                files.add(duplicateFiles(f.getName(), (Catalog)f));
-            }
-            else {
+                files.add(duplicateFiles(f.getName(), (Catalog) f));
+            } else {
                 files.add(new File(f));
             }
         }
@@ -255,7 +252,7 @@ public class FileManager {
         return catalog;
     }
 
-    public void move(){
+    public void move() {
         if (buffer != null) {
             DefaultMutableTreeNode node = (DefaultMutableTreeNode) parent.getFileManagerTree().getLastSelectedPathComponent();
 
@@ -267,13 +264,13 @@ public class FileManager {
 
             File file = (File) buffer.getUserObject();
 
-            Catalog targetedCatalog = (Catalog)node.getUserObject();
+            Catalog targetedCatalog = (Catalog) node.getUserObject();
 
             if (targetedCatalog.addFile(file)) {
                 DefaultMutableTreeNode bufferParent = (DefaultMutableTreeNode) buffer.getParent();
                 bufferParent.remove(buffer);
-                ((Catalog)bufferParent.getUserObject()).getFiles().remove(file);
-                if(bufferParent.getChildCount() == 0){
+                ((Catalog) bufferParent.getUserObject()).getFiles().remove(file);
+                if (bufferParent.getChildCount() == 0) {
                     bufferParent.add(new DefaultMutableTreeNode(new File("", 0)));
                 }
                 if (((File) (((DefaultMutableTreeNode) node.getChildAt(0)).getUserObject())).getName().equals("")) {
@@ -285,8 +282,7 @@ public class FileManager {
                 elementChosen();
                 parent.getFileManagerTree().expandPath(new TreePath(node.getPath()));
                 JOptionPane.showMessageDialog(parent.frame, "Перемещение прошло успешно", "Перемещение", JOptionPane.INFORMATION_MESSAGE);
-            }
-            else {
+            } else {
                 if (file.getClass() == Catalog.class)
                     JOptionPane.showMessageDialog(parent.frame, "Каталог " + file.getName() + " уже существует в каталоге " + targetedCatalog.getName(), "Перемещение каталога", JOptionPane.ERROR_MESSAGE);
                 else
