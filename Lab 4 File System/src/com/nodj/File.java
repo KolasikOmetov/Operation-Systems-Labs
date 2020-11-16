@@ -3,7 +3,7 @@ package com.nodj;
 public class File {
     private final String name;
     private int size;
-    private int iNode;
+    private int link;
 
     public File(String name, int size) {
         this.name = name;
@@ -13,11 +13,11 @@ public class File {
     public File(File file) {
         this.name = file.name;
         this.size = file.size;
-        this.iNode = file.iNode;
+        this.link = file.link;
     }
 
-    public int getINode() {
-        return iNode;
+    public int getLink() {
+        return link;
     }
 
     @Override
@@ -25,8 +25,8 @@ public class File {
         return name;
     }
 
-    public void setINode(int iNode) {
-        this.iNode = iNode;
+    public void setLink(int link) {
+        this.link = link;
     }
 
     public int getSize() {

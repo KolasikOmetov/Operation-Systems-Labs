@@ -30,10 +30,10 @@ public class FileManager {
             return;
 
         File chosenFile = (File) node.getUserObject();
-        int curINode = chosenFile.getINode();
-        while (curINode != -1) {
-            disk.getSectorsArray()[curINode].setSectorStatus(SectorStatus.SELECTED);
-            curINode = parent.getFileSystem().getClustersArray()[curINode];
+        int curLink = chosenFile.getLink();
+        while (curLink != -1) {
+            disk.getSectorsArray()[curLink].setSectorStatus(SectorStatus.SELECTED);
+            curLink = parent.getFileSystem().getClustersArray()[curLink];
         }
     }
 

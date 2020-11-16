@@ -19,7 +19,7 @@ public class FileSystem {
 
     private void initRootFolder() {
         root = new Catalog("root");
-        root.setINode(0);
+        root.setLink(0);
         clustersArray[0] = -1;
         disk.getSectorsArray()[0].setSectorStatus(SectorStatus.FILLED);
         disk.decreeFreeSectors();
@@ -67,7 +67,7 @@ public class FileSystem {
         if (catalog.addFile(file)) {
             failed = false;
             System.out.println("Rest: " + (disk.getFreeSectors() - fileSectorSize));
-            file.setINode(addInDisk(fileSectorSize));
+            file.setLink(addInDisk(fileSectorSize));
             if (file.getClass() == Catalog.class) {
                 allocateAllEntireFiles((Catalog) file);
                 return "Каталог " + file.getName() + " успешно создан в каталоге " + catalog.getName();
@@ -83,7 +83,7 @@ public class FileSystem {
 
     private void allocateAllEntireFiles(Catalog file) {
         for (File f : file.getFiles()) {
-            f.setINode(addInDisk(f.getSize() / disk.getSectorSize()));
+            f.setLink(addInDisk(f.getSize() / disk.getSectorSize()));
             if (f.getClass() == Catalog.class) {
                 allocateAllEntireFiles((Catalog) f);
             }
@@ -130,15 +130,15 @@ public class FileSystem {
     }
 
     public void deleteFromDisk(File file) {
-        int curINode = file.getINode();
-        while (curINode != -1) {
+        int curLink = file.getLink();
+        while (curLink != -1) {
             disk.increeFreeSectors();
-            disk.getSectorsArray()[curINode].setSectorStatus(SectorStatus.EMPTY);
-            int pastINode = curINode;
-            curINode = clustersArray[curINode];
-            clustersArray[pastINode] = -2;
+            disk.getSectorsArray()[curLink].setSectorStatus(SectorStatus.EMPTY);
+            int pastLink = curLink;
+            curLink = clustersArray[curLink];
+            clustersArray[pastLink] = -2;
         }
-        file.setINode(-1);
+        file.setLink(-1);
     }
 
     public Catalog getRoot() {
