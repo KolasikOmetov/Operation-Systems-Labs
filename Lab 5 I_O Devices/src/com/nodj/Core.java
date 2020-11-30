@@ -1,20 +1,34 @@
 package com.nodj;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 public class Core {
     private final ArrayList<Process> processes = new ArrayList<>();
-    private final ArrayList<ProcessUsingIO> processesBlocked = new ArrayList<>();
+
     private int epoch = 1;
     private final int cvantTime = 20;
     private int wholeWorkTime = 0;
     private boolean endOfWork = false;
     private int timeWithoutBlocks;
+    private final UsingIO usingIO;
+    private final HashMap<Integer, DataUsingIO> dataProcessesWithUsingIO;
+
+    Core(){
+        usingIO = new UsingIO();
+        dataProcessesWithUsingIO = usingIO.getDataProcessesWithUsingIO();
+    }
 
     void planNoBlock() {
         ArrayList<Process> processes = new ArrayList<>(this.processes.size());
         for (Process item : this.processes)
             processes.add(item.clone());
+        HashMap<Integer, DataUsingIO> dataProcessesWithUsingIO = new HashMap<>();
+        for(Map.Entry<Integer, DataUsingIO> entry : this.dataProcessesWithUsingIO.entrySet()) {
+            dataProcessesWithUsingIO.put(entry.getKey(), entry.getValue());
+        }
+
         while (!endOfWork) {
             endOfWork = true;
             System.out.println(epoch + "-й цикл");
@@ -22,9 +36,10 @@ public class Core {
                 if (process.isWork()) {
                     process.launch(cvantTime);
                     wholeWorkTime += cvantTime;
-                    if (process.getClass() == ProcessUsingIO.class) {
-                        while (((ProcessUsingIO) process).isStartUsing()) {
-                            process.launch(cvantTime);
+                    DataUsingIO dataUsingIO = dataProcessesWithUsingIO.get(process.getId());
+                    if (dataProcessesWithUsingIO.containsKey(process.getId())) {
+                        while (dataUsingIO.startUsing) {
+                            process.launchUsingIO(cvantTime, dataUsingIO);
                             wholeWorkTime += cvantTime;
                         }
                     }
@@ -38,18 +53,18 @@ public class Core {
     }
 
     void createProcesses(int numOfProcesses) {
+
         for (int i = 0; i < numOfProcesses; i++) {
-            boolean usingIO = Main.getRandomNumber(0, 1) == 0;
+            boolean isUsingIO = Main.getRandomNumber(0, 1) == 0;
             int timeProcess = Main.getRandomNumber(20, 100);
             int ID = processes.size();
             Process process;
-            if (usingIO) {
+            if (isUsingIO) {
                 int timeUsingIO = Main.getRandomNumber(20, 100);
-                process = new ProcessUsingIO(ID, timeProcess, timeUsingIO);
-            } else {
-                process = new Process(ID, timeProcess);
+                dataProcessesWithUsingIO.put(ID, new DataUsingIO(timeUsingIO, Main.getRandomNumber(0, timeProcess-1)));
             }
-            System.out.println("Процесс " + ID + " создан. Время: " + timeProcess + " Использование I/O: " + usingIO);
+            process = new Process(ID, timeProcess);
+            System.out.println("Процесс " + ID + " создан. Время: " + timeProcess + " Использование I/O: " + isUsingIO);
             processes.add(process);
         }
     }
@@ -72,6 +87,7 @@ public class Core {
     }
 
     private void planWithBlock() {
+        ArrayList<Process> processesBlocked = usingIO.getProcessesBlocked();
         while (!endOfWork) {
             endOfWork = true;
             System.out.println(epoch + "-й цикл");
@@ -79,20 +95,13 @@ public class Core {
                 Process process = processes.get(k);
                 if (process.isWork()) {
                     for (int i = 0; i < cvantTime; i++) {
-                        for (int j = 0; j < processesBlocked.size(); j++) {
-                            ProcessUsingIO p = processesBlocked.get(j);
-                            if (p.isStartUsing()) {
-                                p.decreaseTimeUsingIO();
-                            } else {
-                                processesBlocked.remove(p);
-                                j--;
-                                System.out.println("Прерывание: " + p.id + " вернулся в работу");
-                                process = p;
-                            }
+                        Process readyProcess = usingIO.observeBlockedProcesses();
+                        if (readyProcess != null){
+                            process = readyProcess;
                         }
                         if (!processesBlocked.contains(process)) {
-                            if (process.getClass() == ProcessUsingIO.class) {
-                                ((ProcessUsingIO) process).launchWithBlockChecking(processesBlocked);
+                            if (dataProcessesWithUsingIO.containsKey(process.getId())) {
+                                process.launchWithBlockAndIOChecking(processesBlocked, dataProcessesWithUsingIO.get(process.getId()));
                             } else {
                                 process.launchWithBlockChecking();
                             }
